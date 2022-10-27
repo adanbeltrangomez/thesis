@@ -1,3 +1,6 @@
+import os
+CURR_DIR = os.getcwd()
+print(CURR_DIR)
 import csv
 import Utils_Pln
 import Main
@@ -64,10 +67,11 @@ class Gold:
 
     def readGold(self, id_norm):
 
-        df = pd.read_excel("GoldStandard.xlsx", sheet_name='Gold')
+        df = pd.read_excel("..\\Corpus\\GoldStandard.xlsx", sheet_name='Gold')
         df = df.fillna("")
 
         self.norms = []  # {}
+
 
         for index, row in df.iterrows():
             oNorm = Main.Norm()
@@ -95,7 +99,7 @@ class Gold:
             oNorm.G_P_VERB_Tense_Q_VERB_TENSE = row["P_Verb_Tense+Q_Verb_Tense"]
             oNorm.G_CANONICAL = row["Canonical"]
 
-            print("Procesando:\n", oNorm.ID)
+            print("Reading:\n", oNorm.ID)
 
             self.norms.append(oNorm)
         return self.norms
