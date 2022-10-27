@@ -142,7 +142,7 @@ class Norm:
 
         self.doc = nlp(self.TEXT)
         for sentence in self.doc.sents:
-         # displacy.render(sentence, style='dep', jupyter=True, options={'distance': 90, 'collapse_phrases' : True, 'compact' : True, 'font':'Times New Roman'})
+          displacy.render(sentence, style='dep', jupyter=True, options={'distance': 90, 'collapse_phrases' : True, 'compact' : True, 'font':'Times New Roman'})
           svg = displacy.render(sentence, style="dep", jupyter= False, options={'distance': 90, 'collapse_phrases' : True, 'compact':True, 'font': 'Times New Roman'})
           output_path = Path("../results/images/"+self.ID[18:21]+".svg") # you can keep there only "dependency_plot.svg" if you want to save it in the same folder where you run the script 
           output_path.open("w", encoding="utf-8").write(svg)
@@ -530,12 +530,6 @@ class Norm:
     def find_Conditionals(self, tokens_mainVerbs, tokens_sentence):
         conditionals = []
 
-        # tokens_MV    = [verb[0] for verb in tokens_mainVerbs]
-
-        # tokens_MV_withAux =     self.aux_mainVerbs(tokens_MV)
-
-        QClause = ""  # in progress all subtree until star Q-Clause
-
         # SWs in sentence
         tokens_SW = []
         for token in tokens_sentence:
@@ -548,47 +542,51 @@ class Norm:
 
         token_mainVerbs = [token[4] for token in tokens_mainVerbs]
 
-        for mainVerb in token_mainVerbs:
-            print("Buscando Condicionales para", mainVerb.text)
+        for token_SW in tokens_SW:
+            
+            signalWord_included= False
 
-            for SW in tokens_SW:
+                  
+            for conditional in conditionals:
+                print(conditional[9])
+                if token_SW in conditional[9]:
+                    signalWord_included = True
 
-                tokensVBC = self.findVBC(SW, mainVerb)
+            if signalWord_included:
+                continue
 
-                existSyntacticPattern, path_pattern, token_MV, namePattern = self.sintacticPattern(SW, tokensVBC[4],
-                                                                                                  mainVerb)  # token_MV[0])
+            tokensVBC = self.findVBC(token_SW, token_mainVerbs)
+
+            existSyntacticPattern, path_pattern, token_MV, namePattern = self.sintacticPattern(token_SW, tokensVBC[4],
+                                                                                               token_mainVerbs)  # token_MV[0])
 
 
-                typeCanonicalPattern, tense_QClause, tense_PClause = self.canonicalPattern(mainVerb, tokensVBC)
+            typeCanonicalPattern, tense_QClause, tense_PClause = self.canonicalPattern(tokens_mainVerbs, tokensVBC)
 
-                txt_PClause_lower = [w.text.lower() for w in tokensVBC[4].subtree]
-                txt_PClause = "".join([w.text_with_ws for w in tokensVBC[4].subtree])
+            txt_PClause_lower = [w.text.lower() for w in tokensVBC[4].subtree]
+            txt_PClause = "".join([w.text_with_ws for w in tokensVBC[4].subtree])
 
-                txt_PClauseFix = self.check_text_Conditional(txt_PClause, SW, tokensVBC, tokens_sentence)
+            pClause_text, pClause_tokens = self.extract_PClause(token_SW, tokensVBC)
 
-               
-                isConditional = existSyntacticPattern
+            #qClause = self.extract_QClause(token_SW, pClause_text, tokens_sentence)
 
-                if isConditional:
-                    conditionals.append([txt_PClauseFix, path_pattern,
-                                        # 'SW=' + token_SW.text + ';VB=' + token_MV.text + ';VBC=' + tokensVBC[
-                                        # 0].text + ";SubtreeVBC=" + txt_PClause,
-                                        # QClause,
-                                        SW.text,
-                                        namePattern + " PVerb(" + tokensVBC[4].text + ") QVerb(" + mainVerb.text + ")",
-                                        typeCanonicalPattern,
-                                        tense_QClause,
-                                        tense_PClause,
-                                        mainVerb.text,
-                                        Pattern_text
-                                        ])
+            if existSyntacticPattern:
+                conditionals.append([pClause_text,
+                                     path_pattern,                                 
+                                     token_SW.text,
+                                     namePattern + " PVerb(" + tokensVBC[4].text + ") QVerb(" + token_MV.text + ")",
+                                     typeCanonicalPattern,
+                                     tense_QClause,
+                                     tense_PClause,
+                                     token_MV.text,
+                                     Pattern_text, 
+                                     pClause_tokens])
 
         # +"(" + token_MV[0].text + "-" +atoken_verb_PClause[0].text + ")"
 
         return conditionals
 
     def findVBC(self, token_sw, tokens_mainVerb):
-        print (token_sw.text)
         # 0:aux mod, 1:aux, 2:aux-neg, 3:auxpass, 4:verb
 
         tokensVBC = [tokenBlank, tokenBlank, tokenBlank, tokenBlank, tokenBlank]
@@ -607,7 +605,6 @@ class Norm:
                 break
 
         for token in token_sw.ancestors:
-            print(token.text)
             if token.pos_ in {"VERB", "AUX"} and token not in tokens_mainVerb:
                 token_verb_up = token
                 pos_verb_up = token.i
@@ -877,25 +874,18 @@ class Norm:
 
         return tense
 
-    def check_text_Conditional(self, textConditional, token_signalWord, tokens_Conditional, tokens_sentence):
-        text_sentence = [token.text_with_ws for token in tokens_sentence]
 
-        # check if is a PClause is Clause (S + V)
+    def extract_QClause(token_SW, pClause_text, tokens_sentence):
 
-        # txt_PClause, isClause= self.IsClause( txt_PClause)
+        pos_sentence_pClause = tokens_sentence.find( pClause_text)
+        
+        return ""
 
-        # newPClause= True
+    def extract_PClause(self, token_signalWord,  tokensVBC):
 
-        # for cond in conditionals:
-        #   if cond[0] == txt_PClause:
-        #       newPClause= False
+        textConditional = "".join([w.text_with_ws for w in tokensVBC[4].subtree])
 
-        # if newPClause: #and isClause:
-
-        # for token in tokens_sentence:
-        #    if token==token_signalWord:
-        #        pos_signalWord= token.i
-
+        
         pos_signalWord = textConditional.find(token_signalWord.text)
 
         if pos_signalWord < 0:
@@ -907,11 +897,13 @@ class Norm:
 
         existVerb = False
         existSubject = False
+        pClause_txt = ""
+        pClause_tokens= []
 
         if len(doc_Clause) < 3:
-            return ''
+            return pClause_txt, pClause_tokens
 
-        pClause = ""
+      
 
         for i in range(0, len(doc_Clause)):
             token = doc_Clause[i]
@@ -929,12 +921,13 @@ class Norm:
 
             if token.pos_ in {"VERB", "AUX"}:
                 existVerb = True
-            if token.dep_ in ("nsubj", "csubj", "csubjpass", "nsubjpass", "exp"):
+            if token.dep_ in {"nsubj", "csubj", "csubjpass", "nsubjpass", "exp"}:
                 existSubject = True
 
-            pClause += token.text_with_ws
+            pClause_txt += token.text_with_ws
+            pClause_tokens.append( token)
 
-        return pClause
+        return pClause_txt, pClause_tokens
 
     def found_modality_parameter_person1and2(self, modality, aEntities, tokens_subject, tokens_mainverbs,
                                              tokens_object):
@@ -987,9 +980,9 @@ class Norm:
 
     def MorphologicalAnalisys_EntitiesNamed_Norms(self):
         entities = []
-        for ent in oNorm.doc.ents:
-            entities.append([ent.text, ent.start_char, ent.end_char, ent.label_])
-        return entities
+        #for ent in oNorm.doc.ents:
+        #    entities.append([ent.text, ent.start_char, ent.end_char, ent.label_])
+        #return entities
 
         # tokens = nltk.word_tokenize(oNorm.texto)
         # tagged = nltk.pos_tag(tokens)
@@ -1008,9 +1001,9 @@ class Norm:
 
     def syntaxAnalysis_Noun_chunks(sef):
         noun_chunks = []
-        for chunk in self.doc.noun_chunks:
-            noun_chunks.append([chunk.text, chunk.root.text, chunk.root.dep_,
-                                chunk.root.head.text])
+        #for chunk in doc.noun_chunks:
+        #    noun_chunks.append([chunk.text, chunk.root.text, chunk.root.dep_,
+        #                        chunk.root.head.text])
         return noun_chunks
 
     def SyntaxAnalysis_Dependency_parsing(self):
